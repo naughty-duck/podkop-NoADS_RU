@@ -2,7 +2,7 @@ name: Update domains
 
 on:
   schedule:
-    - cron: '0 */12 * * *' # каждые 12 часов
+    - cron: '0 */12 * * *'
   workflow_dispatch:
 
 permissions:
@@ -15,27 +15,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download source
+      - name: Download sources
         run: |
-          curl -L \
-            https://raw.githubusercontent.com/Zalexanninev15/NoADS_RU/main/hosts/blockerFL.txt \
-            -o source.txt
+          curl -L https://raw.githubusercontent.com/Zalexanninev15/NoADS_RU/main/hosts/blockerFL.txt -o fl.txt
+          curl -L https://raw.githubusercontent.com/Zalexanninev15/NoADS_RU/main/hosts/blocker.txt -o base.txt
 
-      - name: Extract domains
+      - name: Process FL list
         run: |
-          grep '^0\.0\.0\.0 ' source.txt \
+          grep '^0\.0\.0\.0 ' fl.txt \
             | awk '{print $2}' \
+            | grep -v '^localhost' \
             | sort -u \
-            > domains.txt
+            > domains_fl.txt
+
+      - name: Process base list
+        run: |
+          grep '^0\.0\.0\.0 ' base.txt \
+            | awk '{print $2}' \
+            | grep -v '^localhost' \
+            | sort -u \
+            > domains_base.txt
 
       - name: Commit changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add domains.txt
+          git add domains_fl.txt domains_base.txt
 
           if ! git diff --cached --quiet; then
-            git commit -m "Update domains"
+            git commit -m "Update domain lists"
             git push
           fi
